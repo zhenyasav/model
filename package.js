@@ -7,15 +7,34 @@ Package.describe({
 });
 
 Package.onUse(function(api) {
- 
 	api.versionsFrom('1.0');
+	api.use([
+		'coffeescript', 
+		'underscore',
+		'mongo']);
 
-	api.use(['coffeescript', 'underscore']);
-
-	api.addFiles(['model.coffee']);
-
+	api.addFiles([
+		'model.coffee', 
+		'change.coffee'
+		]);
 });
 
 Package.onTest(function(api) {
-	api.use(['tinytest', 'zhenya:model', 'coffeescript']);
+	api.use([
+		'tinytest', 
+		'zhenya:model', 
+		'coffeescript',
+		'mongo']);
+
+	api.addFiles([
+		'tests/fubars.coffee'
+		]);
+
+	api.addFiles([
+		'tests/publishChanges.coffee'
+		], 'server')
+	
+	api.addFiles([
+		'tests/model.coffee'
+		], 'client');
 });

@@ -4,6 +4,7 @@ class @Model
 
 	@errors:
 		noCollection: 'Model.collection must be a collection object'
+		noModifier: 'Model.update expects a modifier object'
 
 	@options: 
 		optionsKey: '_options'
@@ -29,6 +30,7 @@ class @Model
 		else if _.isFunction doc
 			doc = undefined
 			_.extend @, selector: doc
+			options.updateMulti = true
 
 		options = _.extend {}, @constructor.defaults, options
 		@[Model.options.optionsKey] = options
@@ -40,9 +42,19 @@ class @Model
 		if @constructor.collection not instanceof Mongo.Collection
 			throw new Meteor.Error Model.errors.noCollection
 
-		afterUpdate = =>
-			
+		if not _.isObject modifier 
+			throw new Meteor.Error Model.errors.noModifier
 
+		afterUpdate = =>
+
+		selector = @selector()
+
+		if typeof cont is 'function'
+			
+		else
+			result = @constructor.collection.update selector, modifier
+			afterUpdate()
+			result
 
 	save: (cont) ->
 		if @constructor.collection not instanceof Mongo.Collection
@@ -83,7 +95,7 @@ class @Model
 			afterInsert = (newid) =>
 				@[Model.options.cacheKey] = _.extend {}, insertDoc, _id: newid
 
-				if @constructor isnt Change and options?.trackChanges
+				if @ not instanceof Change and options?.trackChanges
 					Change.fromInsert @
 					.save()
 

@@ -11,6 +11,7 @@ Package.onUse(function(api) {
 	api.use([
 		'coffeescript', 
 		'underscore',
+		'minimongo',
 		'mongo']);
 
 	api.addFiles([

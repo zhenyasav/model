@@ -3,16 +3,18 @@ class @Model
 	@collection: null
 
 	@errors:
-		noCollection: 'Model.collection must be a collection object'
-		noModifier: 'Model.update expects a modifier object'
+		noCollection: (op) -> op + ' failed: Model.collection must be a collection object'
+		noModifier: (op) -> op + ' failed: Model.update expects a modifier object'
+		invalidSelector: (op) -> op + ' failed: Model selector is invalid'
 
 	@options: 
 		optionsKey: '_options'
 		cacheKey: '_cache'
-		assignIds: true
+		assignIds: false
+		autoFetch: false
 
 	@defaults:
-		trackChanges: true
+		trackChanges: false
 
 	defaults: ->
 		created: new Date()
@@ -38,27 +40,42 @@ class @Model
 
 	selector: -> _id: @_id
 
-	update: (modifier, cont) ->
+	update: (modifier, options, cont) ->
 		if @constructor.collection not instanceof Mongo.Collection
-			throw new Meteor.Error Model.errors.noCollection
+			throw new Meteor.Error Model.errors.noCollection 'update'
 
 		if not _.isObject modifier 
-			throw new Meteor.Error Model.errors.noModifier
+			throw new Meteor.Error Model.errors.noModifier 'update'
 
-		afterUpdate = =>
+		if typeof options is 'function'
+			cont = options
+			options = null
+
+		options = _.extend {}, @[Model.options.optionsKey], options
 
 		selector = @selector()
 
-		if typeof cont is 'function'
-			
+		if not selector? or not _.isObject(selector) or _.isEmpty selector
+			throw new Meteor.Error Model.errors.invalidSelector 'update'
+
+		afterUpdate = (affected) =>
+			if affected
+				if @ not instanceof Change and options?.trackChanges
+					Change.fromUpdate @, modifier
+					.save()
+			affected
+
+		if typeof cont is 'function' or Meteor.isClient
+			@constructor.collection.update selector, modifier, (err, res) =>
+				return cont? err if err?
+				afterUpdate res
+				cont? null, res
 		else
-			result = @constructor.collection.update selector, modifier
-			afterUpdate()
-			result
+			afterUpdate @constructor.collection.update selector, modifier
 
 	save: (cont) ->
 		if @constructor.collection not instanceof Mongo.Collection
-			throw new Meteor.Error Model.errors.noCollection 
+			throw new Meteor.Error Model.errors.noCollection 'save'
 
 		cache = @[Model.options.cacheKey] ?= {}
 		options = @[Model.options.optionsKey]
@@ -83,7 +100,7 @@ class @Model
 			for key in deletedKeys
 				updateModifier.$unset[key] = ''
 
-			@update updateModifier, cont
+			@update updateModifier, autoFetch: false, cont
 
 		else
 			if Model.options.assignIds

@@ -1,3 +1,4 @@
+
 class @Model
 
 	@collection: null
@@ -14,7 +15,7 @@ class @Model
 		autoFetch: false
 
 	@defaults:
-		trackChanges: false
+		trackChanges: true
 
 	defaults: ->
 		created: new Date()
@@ -60,6 +61,7 @@ class @Model
 
 		afterUpdate = (affected) =>
 			if affected
+				LocalCollection._modify @, modifier
 				if @ not instanceof Change and options?.trackChanges
 					Change.fromUpdate @, modifier
 					.save()

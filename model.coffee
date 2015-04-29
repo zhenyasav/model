@@ -28,13 +28,21 @@ class @Model
 				_.extend @, @defaults(), doc
 		else if _.isFunction doc
 			doc = undefined
-			options = _.extend options, selector: doc
+			_.extend @, selector: doc
 
 		options = _.extend {}, @constructor.defaults, options
 		@[Model.options.optionsKey] = options
 		@[Model.options.cacheKey] = {}
 
+	selector: -> _id: @_id
+
 	update: (modifier, cont) ->
+		if @constructor.collection not instanceof Mongo.Collection
+			throw new Meteor.Error Model.errors.noCollection
+
+		afterUpdate = =>
+			
+
 
 	save: (cont) ->
 		if @constructor.collection not instanceof Mongo.Collection
@@ -51,6 +59,18 @@ class @Model
 			# update
 			updateModifier = {}
 			
+			for key in ownKeys
+				if @[key]?.toString?() isnt cache[key]?.toString?()
+					updateModifier.$set ?= {}
+					updateModifier.$set[key] = @[key]
+
+			cacheKeys = _.keys cache
+			deletedKeys = _.difference cacheKeys, ownKeys
+
+			updateModifier.$unset = {} if deletedKeys.length 
+			for key in deletedKeys
+				updateModifier.$unset[key] = ''
+
 			@update updateModifier, cont
 
 		else
@@ -64,7 +84,7 @@ class @Model
 				@[Model.options.cacheKey] = _.extend {}, insertDoc, _id: newid
 
 				if @constructor isnt Change and options?.trackChanges
-					Change.modelInserted @
+					Change.fromInsert @
 					.save()
 
 				@_id = newid

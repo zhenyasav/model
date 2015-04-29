@@ -13,7 +13,7 @@ class @Change extends Model
 	
 	@collection: Changes
 
-	@modelInserted: (model, extras) ->
+	@fromInsert: (model, extras) ->
 		defaults = 
 			user: if Meteor.isClient then Meteor.userId?()
 

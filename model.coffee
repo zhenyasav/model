@@ -53,6 +53,7 @@ class @Model
 			options = null
 
 		options = _.extend {}, @[Model.options.optionsKey], options
+		cache = @[Model.options.cacheKey]
 
 		selector = @selector()
 
@@ -62,6 +63,10 @@ class @Model
 		afterUpdate = (affected) =>
 			if affected
 				LocalCollection._modify @, modifier
+				@[Model.options.cacheKey] = _.pick @, _.difference _.keys(@), [
+					Model.options.cacheKey
+					Model.options.optionsKey
+				]
 				if @ not instanceof Change and options?.trackChanges
 					Change.fromUpdate @, modifier
 					.save()
